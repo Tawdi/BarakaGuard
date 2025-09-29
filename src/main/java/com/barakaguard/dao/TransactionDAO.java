@@ -1,4 +1,17 @@
 package main.java.com.barakaguard.dao;
 
-public interface TransactionDAO {
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+import main.java.com.barakaguard.entity.transaction.Transaction;
+import main.java.com.barakaguard.entity.transaction.TypeTransaction;
+
+public interface TransactionDAO extends BaseDAO<Transaction, UUID> {
+
+    List<Transaction> findByCompteId(UUID compteId);
+
+    List<Transaction> findByType(TypeTransaction type);
+
+    List<Transaction> findByDateRange(LocalDateTime start, LocalDateTime end);
 }
