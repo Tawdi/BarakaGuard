@@ -71,5 +71,15 @@ public class TransactionService {
         }
     }
 
+    public List<Transaction> getAll(TransactionFilter filter) {
+        return getAll().stream()
+                .filter(t -> filter.getMinMontant() == null || t.montant() >= filter.getMinMontant())
+                .filter(t -> filter.getMaxMontant() == null || t.montant() <= filter.getMaxMontant())
+                .filter(t -> filter.getType() == null || t.type().equals(filter.getType()))
+                .filter(t -> filter.getLieu() == null || t.lieu().equalsIgnoreCase(filter.getLieu()))
+                .filter(t -> filter.getStartDate() == null || !t.date().isBefore(filter.getStartDate()))
+                .filter(t -> filter.getEndDate() == null || !t.date().isAfter(filter.getEndDate()))
+                .toList();
+    }
 
 }

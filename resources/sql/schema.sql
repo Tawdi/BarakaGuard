@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS Compte (
 );
 
 -- Table Transaction
-CREATE TABLE IF NOT EXISTS Transaction (
+CREATE TABLE IF NOT EXISTS Transactions (
     id UUID PRIMARY KEY,
     date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     montant NUMERIC(15,2) NOT NULL,
@@ -34,5 +34,5 @@ CREATE TABLE IF NOT EXISTS Transaction (
 );
 
 -- Index utiles
-CREATE INDEX IF NOT EXISTS idx_transaction_idCompte ON Transaction(idCompte);
+CREATE INDEX IF NOT EXISTS idx_transaction_idCompte ON Transactions(idCompte);
 CREATE INDEX IF NOT EXISTS idx_compte_idClient ON Compte(idClient);
