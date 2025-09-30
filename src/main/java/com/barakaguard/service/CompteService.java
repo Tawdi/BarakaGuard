@@ -68,5 +68,21 @@ public class CompteService {
         }
     }
 
+    public List<Compte> getByClientId(UUID clientId) {
+        try {
+            return compteDAO.findByClientId(clientId);
+        } catch (DAOException e) {
+            System.err.println("Erreur lors de la récupération des comptes du client : " + e.getMessage());
+            return List.of();
+        }
+    }
 
+    public Optional<Compte> getByNumero(String numero) {
+        try {
+            return compteDAO.findByNumero(numero);
+        } catch (DAOException e) {
+            System.err.println("Erreur lors de la recherche du compte par numéro : " + e.getMessage());
+            return Optional.empty();
+        }
+    }
 }
