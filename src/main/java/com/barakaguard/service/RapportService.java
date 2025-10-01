@@ -1,5 +1,6 @@
 package main.java.com.barakaguard.service;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -76,7 +77,26 @@ public class RapportService implements IRapportService {
     @Override
     public List<CompteInactifDTO> comptesInactifs(int seuilJours) {
 
-        throw new UnsupportedOperationException("Unimplemented method 'comptesInactifs'");
+        var comptes = compteService.getAll();
+
+        return comptes.stream()
+                .map(
+                        c -> {
+                            var lastTrDate = transactionService
+                                    .getByCompteId(c.getId())
+                                    .stream()
+                                    .map(Transaction::date)
+                                    .max(LocalDateTime::compareTo)
+                                    .orElse(null);
+
+                            var daysInactive = (lastTrDate == null)
+                                    ? Long.MAX_VALUE
+                                    : Duration.between(lastTrDate, LocalDateTime.now()).toDays();
+                            return new CompteInactifDTO(c.getId(), c.getNumero(), c.getIdClient(), lastTrDate,
+                                    daysInactive);
+                        })
+                .filter(e -> e.lastTransactionDate() != null && e.daysInactive() >= seuilJours)
+                .toList();
     }
 
     @Override

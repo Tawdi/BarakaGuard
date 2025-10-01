@@ -99,4 +99,12 @@ public class TransactionService {
                 .toList();
     }
 
+    public List<Transaction> getByCompteId(UUID id) {
+        try {
+            return transactionDAO.findByCompteId(id);
+        } catch (DAOException e) {
+            System.err.println("Erreur lors de la récupération des transactions : " + e.getMessage());
+            return List.of();
+        }
+    }
 }

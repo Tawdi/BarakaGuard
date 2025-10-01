@@ -17,4 +17,6 @@ public interface ITransactionService extends BaseService<Transaction, UUID> {
     public Map<String, List<Transaction>> groupByMonth();
 
     public List<Transaction> getAll(TransactionFilter filter);
+
+    public List<Transaction> getByCompteId(UUID id);
 }
