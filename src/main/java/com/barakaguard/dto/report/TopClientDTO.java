@@ -1,5 +1,7 @@
 package main.java.com.barakaguard.dto.report;
 
-public record TopClientDTO() {
+import java.util.UUID;
+
+public record TopClientDTO(UUID clientId, String nom, String email, double totalBalance) {
 
 }
