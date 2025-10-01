@@ -4,6 +4,7 @@ import main.java.com.barakaguard.dao.ClientDAO;
 import main.java.com.barakaguard.dao.implementation.ClientDAOImpl;
 import main.java.com.barakaguard.exception.DAOException;
 import main.java.com.barakaguard.exception.DatabaseException;
+import main.java.com.barakaguard.service.interfaces.IClientService;
 import main.java.com.barakaguard.entity.client.Client;
 import main.java.com.barakaguard.util.Database;
 
@@ -13,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public class ClientService {
+public class ClientService implements IClientService {
 
     private final ClientDAO clientDAO;
 
@@ -66,6 +67,17 @@ public class ClientService {
             System.err.println("Erreur lors de la récupération des clients : " + e.getMessage());
             return List.of();
         }
+    }
+
+    public Optional<Client> getByEmail(String domain) {
+
+        try {
+            return clientDAO.findByEmail(domain);
+        } catch (DAOException e) {
+            System.err.println("Erreur lors de la recherche du client : " + e.getMessage());
+            return Optional.empty();
+        }
+
     }
 
 }

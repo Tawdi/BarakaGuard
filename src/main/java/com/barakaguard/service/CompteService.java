@@ -5,6 +5,7 @@ import main.java.com.barakaguard.dao.implementation.CompteDAOImpl;
 import main.java.com.barakaguard.entity.compte.Compte;
 import main.java.com.barakaguard.exception.DAOException;
 import main.java.com.barakaguard.exception.DatabaseException;
+import main.java.com.barakaguard.service.interfaces.ICompteService;
 import main.java.com.barakaguard.util.Database;
 
 import java.sql.Connection;
@@ -13,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public class CompteService {
+public class CompteService implements ICompteService {
 
     private final CompteDAO compteDAO;
 

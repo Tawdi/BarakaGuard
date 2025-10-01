@@ -13,8 +13,10 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class TransactionService {
 
@@ -69,6 +71,21 @@ public class TransactionService {
             System.err.println("Erreur lors de la récupération des transactions : " + e.getMessage());
             return List.of();
         }
+    }
+
+    public Map<TypeTransaction, List<Transaction>> groupByType() {
+        return getAll().stream()
+                .collect(Collectors.groupingBy(Transaction::type));
+    }
+
+    public Map<Integer, List<Transaction>> groupByYear() {
+        return getAll().stream()
+                .collect(Collectors.groupingBy(t -> t.date().getYear()));
+    }
+
+    public Map<String, List<Transaction>> groupByMonth() {
+        return getAll().stream()
+                .collect(Collectors.groupingBy(t -> t.date().getYear() + "-" + t.date().getMonthValue()));
     }
 
     public List<Transaction> getAll(TransactionFilter filter) {
