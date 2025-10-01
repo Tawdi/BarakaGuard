@@ -1,5 +1,7 @@
 package main.java.com.barakaguard.service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -10,7 +12,9 @@ import main.java.com.barakaguard.dto.report.CompteInactifDTO;
 import main.java.com.barakaguard.dto.report.MonthlyReportDTO;
 import main.java.com.barakaguard.dto.report.TopClientDTO;
 import main.java.com.barakaguard.dto.report.TransactionSuspiciousDTO;
+import main.java.com.barakaguard.dto.transaction.TransactionFilter;
 import main.java.com.barakaguard.entity.compte.Compte;
+import main.java.com.barakaguard.entity.transaction.Transaction;
 import main.java.com.barakaguard.service.interfaces.IRapportService;
 
 public class RapportService implements IRapportService {
@@ -49,7 +53,24 @@ public class RapportService implements IRapportService {
     @Override
     public MonthlyReportDTO monthlyReport(int year, int month) {
 
-        throw new UnsupportedOperationException("Unimplemented method 'monthlyReport'");
+        LocalDate start = LocalDate.of(year, month, 1);
+        LocalDateTime startDT = start.atStartOfDay();
+        LocalDateTime endDT = start.plusMonths(1).atStartOfDay();
+
+        var filters = new TransactionFilter();
+        filters.setStartDate(startDT);
+        filters.setEndDate(endDT);
+
+        var tr = transactionService.getAll(filters);
+
+        var countByType = tr.stream().collect(Collectors.groupingBy(Transaction::type, Collectors.counting()));
+
+        var volumeBytype = tr.stream()
+                .collect(Collectors.groupingBy(Transaction::type, Collectors.summingDouble(Transaction::montant)));
+        var totalItem = tr.size();
+        var totalVolume = tr.stream().mapToDouble(Transaction::montant).sum();
+
+        return new MonthlyReportDTO(year, month, countByType, volumeBytype, totalItem, totalVolume);
     }
 
     @Override
