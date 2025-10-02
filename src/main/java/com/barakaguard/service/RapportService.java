@@ -3,16 +3,16 @@ package main.java.com.barakaguard.service;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import main.java.com.barakaguard.dto.report.ClientReportDTO;
-import main.java.com.barakaguard.dto.report.CompteInactifDTO;
-import main.java.com.barakaguard.dto.report.MonthlyReportDTO;
-import main.java.com.barakaguard.dto.report.TopClientDTO;
-import main.java.com.barakaguard.dto.report.TransactionSuspiciousDTO;
+import main.java.com.barakaguard.dto.report.*;
+import main.java.com.barakaguard.util.*;
 import main.java.com.barakaguard.dto.transaction.TransactionFilter;
 import main.java.com.barakaguard.entity.compte.Compte;
 import main.java.com.barakaguard.entity.transaction.Transaction;
@@ -103,7 +103,25 @@ public class RapportService implements IRapportService {
     public List<TransactionSuspiciousDTO> detectSuspicious(double montantSeuil, boolean checkLieuInhabituel,
             int freqMaxOps, long windowSeconds) {
 
-        throw new UnsupportedOperationException("Unimplemented method 'detectSuspicious'");
+        List<TransactionSuspiciousDTO> result = new ArrayList<>();
+        var allTrns = transactionService.getAll();
+
+        if (allTrns.isEmpty()) {
+            return List.of();
+        }
+
+        // montant
+        result.addAll(detectMontantSuspicious(allTrns, montantSeuil));
+
+        // lieu Inhabituel
+        if (checkLieuInhabituel) {
+            result.addAll(detectLieuRare(allTrns, 2));
+        }
+
+        // fréquence excessive par compte
+        result.addAll(detectFrequenceExcessiveParCompte(allTrns, freqMaxOps , windowSeconds));
+
+        return result;
     }
 
     @Override
@@ -111,4 +129,71 @@ public class RapportService implements IRapportService {
 
         throw new UnsupportedOperationException("Unimplemented method 'clientReport'");
     }
+
+    private List<TransactionSuspiciousDTO> detectMontantSuspicious(List<Transaction> trnsList, double montantSeuil) {
+        return trnsList.stream()
+                .filter(t -> t.montant() > montantSeuil)
+                .map(t -> new TransactionSuspiciousDTO(
+                        t.id(), t.idCompte(), t.montant(), t.date(), t.type(), "MONTANT_SUPERIEUR_SEUIL"))
+                .toList();
+
+    }
+
+    private List<TransactionSuspiciousDTO> detectLieuRare(List<Transaction> trnsList, int minCount) {
+
+        var freqParCompte = trnsList.stream()
+                .collect(Collectors.groupingBy(Transaction::idCompte));
+
+        return trnsList.stream()
+                .filter(t -> {
+                    var pastTransactions = freqParCompte.get(t.idCompte());
+                    String country = CountryExtractor.extractCountry(t.lieu());
+                    long count = pastTransactions.stream()
+                            .filter(pt -> CountryExtractor.extractCountry(pt.lieu()).equals(country))
+                            .count();
+                    return count < minCount;
+                })
+                .map(t -> new TransactionSuspiciousDTO(
+                        t.id(), t.idCompte(), t.montant(), t.date(), t.type(),
+                        "LIEU_INHABITUEL: " + CountryExtractor.extractCountry(t.lieu())))
+                .toList();
+
+    }
+
+
+    private List<TransactionSuspiciousDTO> detectFrequenceExcessiveParCompte(
+            List<Transaction> transactions, int freqMaxOps, long windowSeconds) {
+
+        return transactions.stream()
+                .collect(Collectors.groupingBy(Transaction::idCompte)) // Map<UUID, List<Transaction>>
+                .entrySet().stream() // Stream<Map.Entry<UUID, List<Transaction>>>
+                .flatMap(entry -> {
+                    List<Transaction> sortedTr = entry.getValue().stream()
+                            .sorted(Comparator.comparing(Transaction::date))
+                            .toList();
+
+                    return IntStream.range(0, sortedTr.size())
+                            .mapToObj(i -> {
+                                long count = sortedTr.stream()
+                                        .filter(t -> Math.abs(Duration.between(t.date(), sortedTr.get(i).date())
+                                                .getSeconds()) <= windowSeconds)
+                                        .count();
+
+                                if (count > freqMaxOps) {
+                                    return new TransactionSuspiciousDTO(
+                                            sortedTr.get(i).id(),
+                                            entry.getKey(),
+                                            sortedTr.get(i).montant(),
+                                            sortedTr.get(i).date(),
+                                            sortedTr.get(i).type(),
+                                            "FREQUENCE_EXCESSIVE");
+                                } else {
+                                    return null;
+                                }
+                            })
+                            .filter(dto -> dto != null);
+                })
+                .toList();
+    }
+
 }
