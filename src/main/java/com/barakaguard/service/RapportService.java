@@ -119,7 +119,7 @@ public class RapportService implements IRapportService {
         }
 
         // fréquence excessive par compte
-        result.addAll(detectFrequenceExcessiveParCompte(allTrns, freqMaxOps , windowSeconds));
+        result.addAll(detectFrequenceExcessiveParCompte(allTrns, freqMaxOps, windowSeconds));
 
         return result;
     }
@@ -127,7 +127,25 @@ public class RapportService implements IRapportService {
     @Override
     public ClientReportDTO clientReport(UUID clientId) {
 
-        throw new UnsupportedOperationException("Unimplemented method 'clientReport'");
+        var client = clientService.getById(clientId)
+                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+
+        var comptes = compteService.getByClientId(clientId);
+
+        double soldeTotal = comptes.stream()
+                .mapToDouble(Compte::getSolde)
+                .sum();
+
+        long nbTransactions = comptes.stream()
+                .flatMap(c -> transactionService.getByCompteId(c.getId()).stream())
+                .count();
+
+        return new ClientReportDTO(
+                clientId,
+                client.nom(),
+                comptes.size(),
+                soldeTotal,
+                nbTransactions);
     }
 
     private List<TransactionSuspiciousDTO> detectMontantSuspicious(List<Transaction> trnsList, double montantSeuil) {
@@ -159,7 +177,6 @@ public class RapportService implements IRapportService {
                 .toList();
 
     }
-
 
     private List<TransactionSuspiciousDTO> detectFrequenceExcessiveParCompte(
             List<Transaction> transactions, int freqMaxOps, long windowSeconds) {
