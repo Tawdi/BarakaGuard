@@ -9,8 +9,10 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class TransactionDAOImpl implements TransactionDAO {
     private final Connection connection;
@@ -56,7 +58,7 @@ public class TransactionDAOImpl implements TransactionDAO {
         String sql = "SELECT * FROM Transactions";
         List<Transaction> transactions = new ArrayList<>();
         try (PreparedStatement stmt = connection.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+                ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 transactions.add(mapToObject(rs));
             }
@@ -145,6 +147,26 @@ public class TransactionDAOImpl implements TransactionDAO {
         return transactions;
     }
 
+    @Override
+    public Map<UUID, List<Transaction>> findByClientId(UUID clientId) {
+        String sql = "SELECT t.* FROM Transactions t JOIN Compte c ON t.idCompte = c.id WHERE c.idClient = ?";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setObject(1, clientId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                List<Transaction> transactions = new ArrayList<>();
+                while (rs.next()) {
+                    transactions.add(mapToObject(rs));
+                }
+
+                return transactions.stream()
+                        .collect(Collectors.groupingBy(Transaction::idCompte));
+            }
+        } catch (SQLException e) {
+            throw new DAOException("Erreur lors de la récupération des transactions du client", e);
+        }
+    }
+
     private Transaction mapToObject(ResultSet rs) throws SQLException {
         return new Transaction(
                 UUID.fromString(rs.getString("id")),
@@ -152,7 +174,7 @@ public class TransactionDAOImpl implements TransactionDAO {
                 rs.getDouble("montant"),
                 TypeTransaction.valueOf(rs.getString("type")),
                 rs.getString("lieu"),
-                UUID.fromString(rs.getString("idCompte"))
-        );
+                UUID.fromString(rs.getString("idCompte")));
     }
+
 }
