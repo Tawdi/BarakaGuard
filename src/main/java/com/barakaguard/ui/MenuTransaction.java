@@ -1,10 +1,13 @@
 package main.java.com.barakaguard.ui;
 
+import main.java.com.barakaguard.dto.transaction.TransactionFilter;
 import main.java.com.barakaguard.entity.transaction.Transaction;
+import main.java.com.barakaguard.entity.transaction.TypeTransaction;
 import main.java.com.barakaguard.service.TransactionService;
 import main.java.com.barakaguard.service.interfaces.ITransactionService;
 import main.java.com.barakaguard.util.InputUtil;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -23,9 +26,10 @@ public class MenuTransaction {
             System.out.println("3. Virement");
             System.out.println("4. Lister les transactions d’un compte");
             System.out.println("5. Lister les transactions d’un client");
+            System.out.println("6. Lister les transactions ");
             System.out.println("0. Retour");
 
-            int choix = InputUtil.readInt("Choix", 0, 5);
+            int choix = InputUtil.readInt("Choix", 0, 6);
 
             switch (choix) {
                 case 1 -> effectuerVersement();
@@ -33,8 +37,57 @@ public class MenuTransaction {
                 case 3 -> effectuerVirement();
                 case 4 -> listerTransactionsCompte();
                 case 5 -> listerTransactionsClient();
+                case 6 -> listerTransactionsFiltre();
                 case 0 -> retour = true;
             }
+        }
+    }
+
+    private void listerTransactionsFiltre() {
+        List<Transaction> transactions;
+        if (InputUtil.readYesNo("Voulez-vous appliquer un filtre ? (o/n): ")) {
+            TransactionFilter filter = new TransactionFilter();
+
+            filter.setMinMontant(InputUtil.readDoubleOptional("Montant minimum (laisser vide si aucun): "));
+            filter.setMaxMontant(InputUtil.readDoubleOptional("Montant maximum (laisser vide si aucun): "));
+
+            TypeTransaction[] types = TypeTransaction.values();
+            String[] options = new String[types.length];
+            for (int i = 0; i < types.length; i++) {
+                options[i] = types[i].name();
+            }
+
+            TypeTransaction type = InputUtil.readEnum("Type de transaction : ", TypeTransaction.class);
+            filter.setType(type);
+
+            // Conversion LocalDate -> LocalDateTime
+            var startDate = InputUtil.readDateOptional("Date de début (yyyy-MM-dd ou vide): ");
+            if (startDate != null) {
+                filter.setStartDate(startDate.atStartOfDay());
+            }
+
+            var endDate = InputUtil.readDateOptional("Date de fin (yyyy-MM-dd ou vide): ");
+            if (endDate != null) {
+                filter.setEndDate(endDate.atTime(23, 59, 59));
+            }
+
+            String lieu = InputUtil.readString("Lieu (ou vide): ");
+            if (lieu != null && !lieu.isBlank()) {
+                filter.setLieu(lieu);
+            }
+
+            transactions = transactionService.getAll(filter);
+
+        } else {
+            transactions = transactionService.getAll();
+        }
+
+        // affichage
+        if (transactions.isEmpty()) {
+            System.out.println("⚠️ Aucune transaction trouvée.");
+        } else {
+            transactions.forEach(t -> System.out.println(
+                    t.id() + " | " + t.type() + " | " + t.montant() + " | " + t.lieu() + " | " + t.date()));
         }
     }
 
