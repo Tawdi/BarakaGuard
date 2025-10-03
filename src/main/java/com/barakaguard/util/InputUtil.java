@@ -33,6 +33,19 @@ public class InputUtil {
         }
     }
 
+        // Lire un entier
+    public static long readLong(String message) {
+        while (true) {
+            System.out.print(message + " : ");
+            String input = scanner.nextLine().trim();
+            try {
+                return Long.parseLong(input);
+            } catch (NumberFormatException e) {
+                System.out.println("Entrez un entier valide !");
+            }
+        }
+    }
+
     public static int readInt(String message, int min, int max) {
         while (true) {
             System.out.print(message + " [" + min + " - " + max + "] : ");
