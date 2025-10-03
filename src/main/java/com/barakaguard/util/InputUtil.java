@@ -186,4 +186,44 @@ public class InputUtil {
         }
     }
 
+    public static String readString(String prompt, String... options) {
+        Scanner scanner = new Scanner(System.in);
+
+        while (true) {
+            System.out.print(prompt + " ");
+            String input = scanner.nextLine().trim();
+
+            if (input.isEmpty()) {
+                return null;
+            }
+
+            if (options != null && options.length > 0) {
+                for (String option : options) {
+                    if (option.equalsIgnoreCase(input)) {
+                        return option.toUpperCase();
+                    }
+                }
+                System.out.println("❌ Valeur invalide. Choix possibles : " + String.join(", ", options));
+            } else {
+                return input;
+            }
+        }
+    }
+
+    public static <E extends Enum<E>> E readEnum(String prompt, Class<E> enumClass) {
+        E[] values = enumClass.getEnumConstants();
+        String[] options = new String[values.length];
+        for (int i = 0; i < values.length; i++) {
+            options[i] = values[i].name();
+        }
+
+        String input = readString(prompt + " (laisser vide si aucun)", options);
+
+        if (input == null) {
+            return null;
+        } else {
+            return Enum.valueOf(enumClass, input);
+        }
+    }
+
 }
