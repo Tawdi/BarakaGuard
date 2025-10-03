@@ -10,7 +10,10 @@ import main.java.com.barakaguard.util.Database;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -85,5 +88,22 @@ public class CompteService implements ICompteService {
             System.err.println("Erreur lors de la recherche du compte par numéro : " + e.getMessage());
             return Optional.empty();
         }
+    }
+
+    public Optional<Compte> getCompteMaxSolde() {
+        return getAll().stream()
+                .max(Comparator.comparingDouble(Compte::getSolde));
+    }
+
+    public Optional<Compte> getCompteMinSolde() {
+        return getAll().stream()
+                .min(Comparator.comparingDouble(Compte::getSolde));
+    }
+
+    public Map<String, Optional<Compte>> getCompteMaxMinSolde() {
+        Map<String, Optional<Compte>> result = new HashMap<>();
+        result.put("max", getCompteMaxSolde());
+        result.put("min", getCompteMinSolde());
+        return result;
     }
 }

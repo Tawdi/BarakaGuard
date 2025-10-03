@@ -19,4 +19,12 @@ public interface ITransactionService extends BaseService<Transaction, UUID> {
     public List<Transaction> getAll(TransactionFilter filter);
 
     public List<Transaction> getByCompteId(UUID id);
+
+    public Map<UUID, List<Transaction>> getByClientId(UUID id);
+
+    public void virement(UUID sourceId, UUID destId, double montant, String lieu);
+
+    public void versement(UUID compteId, double montant, String lieu);
+
+    public void retrait(UUID compteId, double montant, String lieu);
 }
