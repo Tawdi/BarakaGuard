@@ -5,6 +5,7 @@ import main.java.com.barakaguard.service.CompteService;
 import main.java.com.barakaguard.service.RapportService;
 import main.java.com.barakaguard.service.TransactionService;
 import main.java.com.barakaguard.util.InputUtil;
+import main.java.com.barakaguard.util.mock.DataMocker;
 
 public class MenuPrincipal {
 
@@ -28,16 +29,18 @@ public class MenuPrincipal {
             System.out.println("2. Gérer les comptes");
             System.out.println("3. Gérer les transactions");
             System.out.println("4. Rapports et analyses");
+            System.out.println("5. DATA MOCKER (test)");
             System.out.println("0. Quitter");
             System.out.print("Choix: ");
 
-            int choix = InputUtil.readInt("Choix", 0, 4);
+            int choix = InputUtil.readInt("Choix", 0, 5);
 
             switch (choix) {
                 case 1 -> menuClient.afficher();
                 case 2 -> menuCompte.afficher();
                 case 3 -> menuTransaction.afficher();
                 case 4 -> menuRapport.afficher();
+                case 5 -> mockData();
                 case 0 -> {
                     System.out.println("Au revoir !");
                     quitter = true;
@@ -45,5 +48,11 @@ public class MenuPrincipal {
                 default -> System.out.println("Choix invalide !");
             }
         }
+    }
+
+    private void mockData() {
+        System.out.println("🧪 Génération de données factices...");
+        DataMocker mocker = new DataMocker();
+        mocker.generateData();
     }
 }
