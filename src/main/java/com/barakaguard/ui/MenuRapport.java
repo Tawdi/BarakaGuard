@@ -1,9 +1,12 @@
 package main.java.com.barakaguard.ui;
 
 import main.java.com.barakaguard.service.RapportService;
+import main.java.com.barakaguard.util.ExportUtil;
 import main.java.com.barakaguard.util.InputUtil;
 
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 public class MenuRapport {
@@ -41,8 +44,15 @@ public class MenuRapport {
 
     private void topClients() {
         int n = InputUtil.readInt("Combien de clients afficher ?", 1, 50);
-        rapportService.topClientsByBalance(n)
-                .forEach(c -> System.out.printf("👤 %s | %s | Total: %.2f%n", c.nom(), c.email(), c.totalBalance()));
+        var data = rapportService.topClientsByBalance(n);
+        data.forEach(c -> System.out.printf("👤 %s | %s | Total: %.2f%n", c.nom(), c.email(), c.totalBalance()));
+
+        String[] headers = { "Nom", "Email", "Solde" };
+        List<String[]> rows = data.stream()
+                .map(c -> new String[] { c.nom(), c.email(), String.valueOf(c.totalBalance()) })
+                .toList();
+
+        handleExport(headers, rows, "topClients");
     }
 
     private void monthlyReport() {
@@ -55,13 +65,31 @@ public class MenuRapport {
         System.out.println("Volumes par type: " + report.volumeByType());
         System.out.println("Total transactions: " + report.totalTransactions());
         System.out.println("Volume total: " + report.totalVolume());
+
+        String[] headers = { "Type", "Nombre", "Volume" };
+        List<String[]> rows = report.countByType().entrySet().stream()
+                .map(e -> new String[] {
+                        e.getKey().toString(),
+                        String.valueOf(e.getValue()),
+                        String.valueOf(report.volumeByType().getOrDefault(e.getKey(), 0.0))
+                })
+                .toList();
+
+        handleExport(headers, rows, "monthlyReport_" + year + "_" + month);
     }
 
     private void comptesInactifs() {
         int jours = InputUtil.readInt("Seuil d'inactivité en jours: ", 1, 3650);
-        rapportService.comptesInactifs(jours)
-                .forEach(c -> System.out.printf("💤 Compte %s (Client %s) inactif depuis %d jours%n",
-                        c.numero(), c.clientId(), c.daysInactive()));
+        var data = rapportService.comptesInactifs(jours);
+        data.forEach(c -> System.out.printf("💤 Compte %s (Client %s) inactif depuis %d jours%n",
+                c.numero(), c.clientId(), c.daysInactive()));
+
+        String[] headers = { "Compte", "ClientId", "JoursInactifs" };
+        List<String[]> rows = data.stream()
+                .map(c -> new String[] { c.numero(), c.clientId().toString(), String.valueOf(c.daysInactive()) })
+                .toList();
+
+        handleExport(headers, rows, "comptesInactifs_" + jours);
     }
 
     private void detectSuspicious() {
@@ -70,9 +98,22 @@ public class MenuRapport {
         int freq = InputUtil.readInt("Nombre max d'opérations autorisées: ", 1, 1000);
         long window = InputUtil.readLong("Fenêtre en secondes: ");
 
-        rapportService.detectSuspicious(seuil, checkLieu, freq, window)
-                .forEach(s -> System.out.printf("⚠️ Suspicious: %s | Compte %s | %.2f | %s | %s%n",
-                        s.txId(), s.compteId(), s.montant(), s.date(), s.reason()));
+        var data = rapportService.detectSuspicious(seuil, checkLieu, freq, window);
+        data.forEach(s -> System.out.printf("⚠️ Suspicious: %s | Compte %s | %.2f | %s | %s%n",
+                s.txId(), s.compteId(), s.montant(), s.date(), s.reason()));
+
+        String[] headers = { "TransactionId", "CompteId", "Montant", "Date", "Raison" };
+        List<String[]> rows = data.stream()
+                .map(s -> new String[] {
+                        s.txId().toString(),
+                        s.compteId().toString(),
+                        String.valueOf(s.montant()),
+                        s.date().toString(),
+                        s.reason()
+                })
+                .toList();
+
+        handleExport(headers, rows, "suspicious");
     }
 
     private void clientReport() {
@@ -81,8 +122,37 @@ public class MenuRapport {
             var report = rapportService.clientReport(UUID.fromString(id));
             System.out.printf("👤 %s | %d comptes | Solde total: %.2f | %d transactions%n",
                     report.nom(), report.nbComptes(), report.soldeTotal(), report.nbTransactions());
+
+            String[] headers = { "Nom", "NbComptes", "SoldeTotal", "NbTransactions" };
+            List<String[]> rows = Arrays.asList(
+                    new String[][] {
+                            new String[] {
+                                    report.nom(),
+                                    String.valueOf(report.nbComptes()),
+                                    String.valueOf(report.soldeTotal()),
+                                    String.valueOf(report.nbTransactions())
+                            }
+                    });
+
+            handleExport(headers, rows, "clientReport_" + id);
         } catch (Exception e) {
             System.out.println("❌ Client introuvable");
+        }
+    }
+
+    private void handleExport(String[] headers, List<String[]> rows, String baseFileName) {
+        if (InputUtil.readYesNo("Exporter ce rapport ? (o/n): ")) {
+            int choix = InputUtil.readInt("1. CSV  2. JSON  3. Les deux", 1, 3);
+
+            switch (choix) {
+                case 1 -> ExportUtil.exportCSV(headers, rows, baseFileName + ".csv");
+                case 2 -> ExportUtil.exportJSON(headers, rows, baseFileName + ".json");
+                case 3 -> {
+                    ExportUtil.exportCSV(headers, rows, baseFileName + ".csv");
+                    ExportUtil.exportJSON(headers, rows, baseFileName + ".json");
+                }
+                default -> System.out.println("❌ Choix invalide.");
+            }
         }
     }
 }
